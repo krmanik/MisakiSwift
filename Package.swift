@@ -19,10 +19,16 @@ let package = Package(
       name: "MisakiZH",
       targets: ["MisakiZH"]
     ),
+    // CppJieba C++ wrapper (for external packages needing jieba tokenization)
+    .library(
+      name: "CppJieba",
+      targets: ["CppJieba"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.30.2"),
-    .package(url: "https://github.com/mlalma/MLXUtilsLibrary.git", exact: "0.0.6")
+    // .package(url: "https://github.com/mlalma/MLXUtilsLibrary.git", exact: "0.0.6")
+    .package(path: "../MLXUtilsLibrary")
   ],
   targets: [
     // MARK: - English G2P

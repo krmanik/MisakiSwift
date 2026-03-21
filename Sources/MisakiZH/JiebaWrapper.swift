@@ -1,9 +1,41 @@
 import Foundation
 import CppJieba
 
-/// Swift wrapper around the C bridge to cppjieba
-public final class JiebaWrapper {
+/// Swift wrapper around the C bridge to cppjieba.
+/// After initialization the C handle is read-only (cut/tag only traverse the trie),
+/// so concurrent access from multiple threads is safe.
+public final class JiebaWrapper: @unchecked Sendable {
     private let handle: JiebaHandle
+
+    // MARK: - Shared Instance
+
+    /// Thread-safe shared instance that auto-loads dicts from MisakiZH's resource bundle.
+    /// Use this from any consuming app — no paths needed.
+    /// Swift guarantees `static let` is initialized exactly once (thread-safe).
+    nonisolated(unsafe) public static let shared: JiebaWrapper? = {
+        let bundle = Bundle.module
+        guard let dictURL = bundle.url(forResource: "dict", withExtension: nil) else {
+            print("[JiebaWrapper] dict directory not found in MisakiZH bundle")
+            return nil
+        }
+        let dir = dictURL.path + "/"
+        do {
+            let wrapper = try JiebaWrapper(
+                dictPath: dir + "jieba.dict.utf8",
+                hmmModelPath: dir + "hmm_model.utf8",
+                userDictPath: dir + "user.dict.utf8",
+                idfPath: dir + "idf.utf8",
+                stopWordPath: dir + "stop_words.utf8"
+            )
+            print("[JiebaWrapper] CppJieba initialized from Bundle.module")
+            return wrapper
+        } catch {
+            print("[JiebaWrapper] Failed to initialize: \(error)")
+            return nil
+        }
+    }()
+
+    // MARK: - Init
 
     /// Initialize Jieba with dictionary file paths
     public init(dictPath: String, hmmModelPath: String, userDictPath: String,
