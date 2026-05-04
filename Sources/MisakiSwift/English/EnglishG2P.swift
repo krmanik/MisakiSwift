@@ -5,7 +5,9 @@ import MLXUtilsLibrary
 // Main G2P pipeline for English text
 final public class EnglishG2P {
   private let british: Bool
-  private let tagger: NLTagger
+  // tagger is intentionally NOT stored as an instance property — NLTagger is not thread-safe
+  // and concurrent TTS prefetch tasks would race on tagger.string, causing EXC_BAD_ACCESS.
+  // A fresh NLTagger is created per tokenize() call instead.
   private let lexicon: Lexicon
   private let fallback: EnglishFallbackNetwork
   private let unk: String
@@ -44,7 +46,6 @@ final public class EnglishG2P {
 
   public init(british: Bool = false, unk: String = "❓") {
     self.british = british
-    self.tagger = NLTagger(tagSchemes: [.nameTypeOrLexicalClass])
     self.lexicon = Lexicon(british: british)
     self.fallback = EnglishFallbackNetwork(british: british)
     self.unk = unk
@@ -193,7 +194,10 @@ final public class EnglishG2P {
   private func tokenize(preprocessedText: PreprocessTuple) -> [MToken] {
     var mutableTokens: [MToken] = []
     
-    // Tokenize and perform part-of-speech tagging
+    // Create a fresh NLTagger per call — NLTagger is NOT thread-safe and storing it
+    // as an instance property caused EXC_BAD_ACCESS when concurrent prefetch tasks
+    // mutated tagger.string simultaneously on a concurrent queue.
+    let tagger = NLTagger(tagSchemes: [.nameTypeOrLexicalClass])
     tagger.string = preprocessedText.text
     tagger.setLanguage(.english, range: preprocessedText.text.startIndex..<preprocessedText.text.endIndex)
     let options: NLTagger.Options = []
