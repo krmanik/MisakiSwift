@@ -136,4 +136,38 @@ JiebaCutResult jieba_cut_for_search(JiebaHandle handle, const char* sentence, in
     return make_cut_result(words);
 }
 
+JiebaKeywordResult jieba_extract_keywords(JiebaHandle handle, const char* sentence, size_t top_n) {
+    JiebaKeywordResult result = {NULL, 0};
+    if (!handle || !sentence) return result;
+
+    auto* jieba = static_cast<cppjieba::Jieba*>(handle);
+    std::vector<std::pair<std::string, double>> keywords;
+    jieba->extractor.Extract(sentence, keywords, top_n);
+
+    if (keywords.empty()) return result;
+
+    result.count = keywords.size();
+    result.keywords = (JiebaKeyword*)malloc(sizeof(JiebaKeyword) * result.count);
+    if (!result.keywords) {
+        result.count = 0;
+        return result;
+    }
+
+    for (size_t i = 0; i < keywords.size(); ++i) {
+        result.keywords[i].word = strdup_safe(keywords[i].first);
+        result.keywords[i].weight = keywords[i].second;
+    }
+
+    return result;
+}
+
+void jieba_free_keyword_result(JiebaKeywordResult result) {
+    if (result.keywords) {
+        for (size_t i = 0; i < result.count; ++i) {
+            free(result.keywords[i].word);
+        }
+        free(result.keywords);
+    }
+}
+
 } // extern "C"

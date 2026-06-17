@@ -57,6 +57,21 @@ void jieba_free_cut_result(JiebaCutResult result);
 // Cut for search (returns sub-word segmentation for longer words)
 JiebaCutResult jieba_cut_for_search(JiebaHandle handle, const char* sentence, int use_hmm);
 
+// A keyword (word + TF-IDF weight)
+typedef struct {
+    char* word;
+    double weight;
+} JiebaKeyword;
+
+typedef struct {
+    JiebaKeyword* keywords;
+    size_t count;
+} JiebaKeywordResult;
+
+// TF-IDF keyword extraction (uses the idf + stop-word dicts loaded at create time)
+JiebaKeywordResult jieba_extract_keywords(JiebaHandle handle, const char* sentence, size_t top_n);
+void jieba_free_keyword_result(JiebaKeywordResult result);
+
 #ifdef __cplusplus
 }
 #endif

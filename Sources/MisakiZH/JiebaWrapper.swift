@@ -83,6 +83,25 @@ public final class JiebaWrapper: @unchecked Sendable {
         return words
     }
 
+    /// TF-IDF keyword extraction.
+    /// Returns up to `topN` keywords ranked by weight (descending). Single characters and
+    /// stop words are filtered out by cppjieba using the idf + stop-word dicts loaded at init.
+    public func extractKeywords(_ sentence: String, topN: Int = 20) -> [(word: String, weight: Double)] {
+        let result = jieba_extract_keywords(handle, sentence, topN)
+        defer { jieba_free_keyword_result(result) }
+
+        var keywords: [(String, Double)] = []
+        keywords.reserveCapacity(result.count)
+
+        for i in 0..<result.count {
+            let kw = result.keywords[i]
+            if let w = kw.word {
+                keywords.append((String(cString: w), kw.weight))
+            }
+        }
+        return keywords
+    }
+
     /// Cut for search (sub-word segmentation, like jieba.cut_for_search in Python)
     public func cutForSearch(_ sentence: String, useHMM: Bool = true) -> [String] {
         let result = jieba_cut_for_search(handle, sentence, useHMM ? 1 : 0)
