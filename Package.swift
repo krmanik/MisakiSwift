@@ -24,6 +24,11 @@ let package = Package(
       name: "CppJieba",
       targets: ["CppJieba"]
     ),
+    // Korean G2P - pure Swift (v0: no native deps)
+    .library(
+      name: "MisakiKO",
+      targets: ["MisakiKO"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.30.2"),
@@ -94,10 +99,26 @@ let package = Package(
       ]
     ),
 
+    // MARK: - Korean G2P (pure Swift, v0)
+    .target(
+      name: "MisakiKO",
+      dependencies: ["MisakiSwift"],
+      path: "Sources/MisakiKO",
+      resources: [
+        .copy("Resources/table.csv"),
+        .copy("Resources/idioms.txt"),
+        .copy("Resources/rules.txt"),
+      ]
+    ),
+
     // MARK: - Tests
     .testTarget(
       name: "MisakiSwiftTests",
       dependencies: ["MisakiSwift"]
+    ),
+    .testTarget(
+      name: "MisakiKOTests",
+      dependencies: ["MisakiKO"]
     ),
     .testTarget(
       name: "MisakiZHTests",
