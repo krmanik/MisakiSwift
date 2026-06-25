@@ -29,6 +29,11 @@ let package = Package(
       name: "MisakiKO",
       targets: ["MisakiKO"]
     ),
+    // Japanese G2P - pure Swift transformation layer (engine via JAEngine protocol)
+    .library(
+      name: "MisakiJA",
+      targets: ["MisakiJA"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.30.2"),
@@ -111,6 +116,13 @@ let package = Package(
       ]
     ),
 
+    // MARK: - Japanese G2P (pure Swift; engine bridge TODO)
+    .target(
+      name: "MisakiJA",
+      dependencies: [],
+      path: "Sources/MisakiJA"
+    ),
+
     // MARK: - Tests
     .testTarget(
       name: "MisakiSwiftTests",
@@ -119,6 +131,10 @@ let package = Package(
     .testTarget(
       name: "MisakiKOTests",
       dependencies: ["MisakiKO"]
+    ),
+    .testTarget(
+      name: "MisakiJATests",
+      dependencies: ["MisakiJA"]
     ),
     .testTarget(
       name: "MisakiZHTests",
