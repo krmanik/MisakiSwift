@@ -1,0 +1,4 @@
+Sources/MisakiJA/Resources/open_jtalk_dic/sys.dic filter=lfs diff=lfs merge=lfs -text
+Sources/MisakiJA/Resources/open_jtalk_dic/matrix.bin filter=lfs diff=lfs merge=lfs -text
+Sources/MisakiJA/Resources/open_jtalk_dic/char.bin filter=lfs diff=lfs merge=lfs -text
+Sources/MisakiJA/Resources/open_jtalk_dic/unk.dic filter=lfs diff=lfs merge=lfs -text
