@@ -62,3 +62,18 @@ final class JAG2PTests: XCTestCase {
         XCTAssertEqual(tokens.last?.text, ".")
     }
 }
+
+final class OpenJTalkIntegrationTests: XCTestCase {
+    func testRealFrontend() throws {
+        let g2p = try JAG2P.openJTalk()
+        let cases = ["\u{3053}\u{3093}\u{306B}\u{3061}\u{306F}",       // こんにちは
+                     "\u{65E5}\u{672C}\u{8A9E}",                         // 日本語
+                     "\u{6771}\u{4EAC}\u{306B}\u{884C}\u{304D}\u{307E}\u{3059}\u{3002}"] // 東京に行きます。
+        for t in cases {
+            let (out, tokens) = g2p.phonemize(t)
+            print("JA: \(t) -> \(out)  [\(tokens.count) tokens]")
+            XCTAssertFalse(out.isEmpty)
+            XCTAssertFalse(tokens.isEmpty)
+        }
+    }
+}

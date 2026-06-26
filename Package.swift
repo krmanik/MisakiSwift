@@ -116,11 +116,41 @@ let package = Package(
       ]
     ),
 
-    // MARK: - Japanese G2P (pure Swift; engine bridge TODO)
+    // MARK: - OpenJTalk frontend C bridge (Japanese morph + accent analysis)
+    .target(
+      name: "CppOpenJTalk",
+      dependencies: [],
+      path: "Sources/CppOpenJTalk",
+      publicHeadersPath: "include",
+      cxxSettings: [
+        .headerSearchPath("openjtalk/mecab"),
+        .headerSearchPath("openjtalk/njd"),
+        .headerSearchPath("openjtalk/text2mecab"),
+        .headerSearchPath("openjtalk/mecab2njd"),
+        .headerSearchPath("openjtalk/njd_set_pronunciation"),
+        .headerSearchPath("openjtalk/njd_set_digit"),
+        .headerSearchPath("openjtalk/njd_set_accent_phrase"),
+        .headerSearchPath("openjtalk/njd_set_accent_type"),
+        .headerSearchPath("openjtalk/njd_set_unvoiced_vowel"),
+        .headerSearchPath("openjtalk/njd_set_long_vowel"),
+        .define("HAVE_CONFIG_H"),
+        .define("DIC_VERSION", to: "102"),
+        .define("MECAB_DEFAULT_RC", to: "\"dummy\""),
+        .define("PACKAGE", to: "\"open_jtalk\""),
+        .define("VERSION", to: "\"1.11\""),
+        .define("CHARSET_UTF_8"),
+        .define("MECAB_UTF8_USE_ONLY"),
+      ]
+    ),
+
+    // MARK: - Japanese G2P (pure Swift core + OpenJTalk engine)
     .target(
       name: "MisakiJA",
-      dependencies: [],
-      path: "Sources/MisakiJA"
+      dependencies: ["CppOpenJTalk"],
+      path: "Sources/MisakiJA",
+      resources: [
+        .copy("Resources/open_jtalk_dic"),
+      ]
     ),
 
     // MARK: - Tests
