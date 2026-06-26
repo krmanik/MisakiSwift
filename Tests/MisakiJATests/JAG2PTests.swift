@@ -77,3 +77,19 @@ final class OpenJTalkIntegrationTests: XCTestCase {
         }
     }
 }
+
+final class JANum2KanaTests: XCTestCase {
+    func testForward() {
+        XCTAssertEqual(JANum2Kana.convert("5", .hiragana), "ご")
+        XCTAssertEqual(JANum2Kana.convert("10", .hiragana), "じゅう")
+        XCTAssertEqual(JANum2Kana.convert("123", .hiragana), "ひゃくにじゅうさん")
+        XCTAssertEqual(JANum2Kana.convert("2024", .kanji), "二千二十四")
+        XCTAssertEqual(JANum2Kana.convert("123", .romaji), "hyaku ni juu san")
+        XCTAssertEqual(JANum2Kana.convert("1000000", .hiragana), "ひゃくまん")
+        XCTAssertEqual(JANum2Kana.convert("123456789", .kanji), "一億二千三百四十五万六千七百八十九")
+        XCTAssertEqual(JANum2Kana.convert("3.14", .hiragana), "さんてんいちよん")
+    }
+    func testReverse() {
+        XCTAssertEqual(JANum2Kana.convertKanji("二千二十四"), "2024")
+    }
+}

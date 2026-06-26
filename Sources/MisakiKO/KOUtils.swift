@@ -82,6 +82,68 @@ enum KOUtils {
         return result
     }
 
+    /// Attach POS tags (/J /P /E /B) to a string using mecab-ko (mirrors utils.annotate).
+    /// Returns the string unchanged if tagging doesn't line up with the input.
+    static func annotate(_ string: String, _ mecab: MecabKo) -> String {
+        let tokens = mecab.pos(string)
+
+        // Sanity: concatenated surfaces must equal the input minus spaces/newlines.
+        let stripped = string.unicodeScalars.filter { $0 != " " && $0 != "\n" }.map(Character.init)
+        let joined = Array(tokens.map { $0.surface }.joined())
+        if stripped != joined { return string }
+
+        // blanks: (index, char) of spaces/newlines in original (index over Characters).
+        let chars = Array(string)
+        var blanks: [(Int, Character)] = []
+        for (i, c) in chars.enumerated() where c == " " || c == "\n" {
+            blanks.append((i, c))
+        }
+
+        // Build per-character tag sequence: "_"*(len-1) + tagChar per token.
+        var tagSeq: [Character] = []
+        for (surface, pos) in tokens {
+            var tag = pos.components(separatedBy: "+").last ?? pos
+            let tagChar: Character
+            if tag == "NNBC" || surface == "곳" {
+                tagChar = "B"
+            } else {
+                tagChar = tag.first ?? "*"
+            }
+            let len = surface.count
+            for _ in 0..<max(0, len - 1) { tagSeq.append("_") }
+            tagSeq.append(tagChar)
+        }
+
+        // Re-insert blanks at their original positions.
+        for (i, c) in blanks {
+            if i <= tagSeq.count { tagSeq.insert(c, at: i) } else { tagSeq.append(c) }
+        }
+
+        // Emit annotated string.
+        var annotated = ""
+        let n = min(chars.count, tagSeq.count)
+        for idx in 0..<n {
+            let ch = chars[idx]
+            let tag = tagSeq[idx]
+            annotated.append(ch)
+            if ch == "\u{C758}" && tag == "J" {              // 의/J
+                annotated += "/J"
+            } else if tag == "E" {
+                if let last = Jamo.h2j(String(ch)).unicodeScalars.last, last == "\u{11AF}" { // ᆯ
+                    annotated += "/E"
+                }
+            } else if tag == "V" {
+                let pSet: Set<Unicode.Scalar> = ["\u{11AB}", "\u{11AC}", "\u{11B7}", "\u{11B1}", "\u{11B0}", "\u{11B2}", "\u{11B4}"]
+                if let last = Jamo.h2j(String(ch)).unicodeScalars.last, pSet.contains(last) {
+                    annotated += "/P"
+                }
+            } else if tag == "B" {
+                annotated += "/B"
+            }
+        }
+        return annotated
+    }
+
     /// group_vowels=True merging (mirrors utils.group). Unused by default pipeline.
     static func group(_ inp: String) -> String {
         var out = inp

@@ -14,10 +14,12 @@ public final class KOG2P {
 
     private let idioms: [(String, String)]
     private let table: [(String, String, [String])]
+    private let mecab: MecabKo?
 
     public init() {
         self.idioms = KOG2P.loadIdioms()
         self.table = KOUtils.parseTable()
+        self.mecab = MecabKo.shared
     }
 
     /// Convert text to a jamo/phoneme string (matches Python `KOG2P.__call__` return).
@@ -26,7 +28,7 @@ public final class KOG2P {
         descriptive: Bool = false,
         groupVowels: Bool = false,
         toSyllable: Bool = false,
-        useDict: Bool = false   // v0 default: no mecab
+        useDict: Bool = true    // default: mecab-ko POS annotation (matches misaki ko.py)
     ) -> String {
         var string = text
 
@@ -36,9 +38,9 @@ public final class KOG2P {
         // 2. English → Hangul
         string = KOEnglish.convertEng(string)
 
-        // 3. annotate (mecab POS tags)  — TODO: requires CppMecab + mecab-ko-dic
-        if useDict {
-            // string = annotate(string)
+        // 3. annotate (mecab-ko POS tags → /J /P /E /B)
+        if useDict, let mecab {
+            string = KOUtils.annotate(string, mecab)
         }
 
         // 4. numerals

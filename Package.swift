@@ -104,15 +104,19 @@ let package = Package(
       ]
     ),
 
-    // MARK: - Korean G2P (pure Swift, v0)
+    // MARK: - Korean G2P (pure Swift + mecab-ko POS annotation)
+    // Shares the mecab tagger compiled in CppOpenJTalk (which also exposes
+    // mecab_bridge.h). Korean uses only the generic mecab bridge, not the NJD path.
     .target(
       name: "MisakiKO",
-      dependencies: ["MisakiSwift"],
+      dependencies: ["MisakiSwift", "CppOpenJTalk"],
       path: "Sources/MisakiKO",
       resources: [
         .copy("Resources/table.csv"),
         .copy("Resources/idioms.txt"),
         .copy("Resources/rules.txt"),
+        .copy("Resources/cmudict.dict"),
+        .copy("Resources/mecab-ko-dic"),
       ]
     ),
 

@@ -40,3 +40,43 @@ final class KOG2PTests: XCTestCase {
         print("KO convertNum '3개': \(KONumerals.convertNum("3개"))")
     }
 }
+
+extension KOG2PTests {
+    func testEnglishCmudict() {
+        // g2pk docstring: convert_eng("그 사람 좀 old school이야") -> "그 사람 좀 올드 스쿨이야"
+        let out = KOEnglish.convertEng("그 사람 좀 old school이야")
+        print("KO eng: \(out)")
+        XCTAssertEqual(out, "그 사람 좀 올드 스쿨이야")
+    }
+    func testEnglishAcronym() {
+        // uppercase / OOV → letter spelling
+        XCTAssertEqual(KOEnglish.convertEng("MP3"), "엠피3")
+    }
+}
+
+extension KOG2PTests {
+    func testMecabAvailable() {
+        guard let m = MecabKo.shared else { XCTFail("mecab-ko-dic not loaded"); return }
+        let pos = m.pos("나의 친구가")
+        print("KO pos 나의친구가: \(pos)")
+        XCTAssertFalse(pos.isEmpty)
+    }
+    func testFullPipelineWithDict() {
+        let g = KOG2P()
+        // g2pk docstring: "나의 친구가 mp3 file 3개를 다운받고 있다"
+        //              -> "나의 친구가 엠피쓰리 파일 세개를 다운받꼬 읻따"
+        let out = g.phonemize("나의 친구가 mp3 file 3개를 다운받고 있다", toSyllable: true)
+        print("KO full: \(out)")
+        XCTAssertEqual(out, "나의 친구가 엠피쓰리 파일 세개를 다운받꼬 읻따")
+    }
+}
+
+extension KOG2PTests {
+    func testSpecialRules() {
+        let g = KOG2P()
+        // modifying_rieul (rule 27): 할걸 → 할껄
+        XCTAssertEqual(g.phonemize("할걸", toSyllable: true), "할껄")
+        // balb (rule 10.1): 밟다 → 밥따
+        XCTAssertEqual(g.phonemize("밟다", toSyllable: true), "밥따")
+    }
+}
