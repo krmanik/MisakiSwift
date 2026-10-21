@@ -33,7 +33,7 @@ public final class ZHG2P {
         "eng": ["ə0", "ŋ"], "er": ["ɚ0"], "i": ["i0"], "ia": ["j", "a0"],
         "ian": ["j", "ɛ0", "n"], "iang": ["j", "a0", "ŋ"], "iao": ["j", "au̯0"],
         "ie": ["j", "e0"], "in": ["i0", "n"], "ing": ["i0", "ŋ"],
-        "iong": ["j", "ʊ0", "ŋ"], "iou": ["j", "ou̯0"], "ong": ["ʊ0", "ŋ"],
+        "iong": ["j", "ʊ0", "ŋ"], "iou": ["j", "ou̯0"], "iu": ["j", "ou̯0"], "ong": ["ʊ0", "ŋ"],
         "ou": ["ou̯0"], "o": ["o0"], "u": ["u0"], "ua": ["w", "a0"],
         "uai": ["w", "ai̯0"], "uan": ["w", "a0", "n"], "uang": ["w", "a0", "ŋ"],
         "ui": ["w", "ei̯0"], "un": ["w", "ə0", "n"], "ueng": ["w", "ə0", "ŋ"],
@@ -262,6 +262,53 @@ public final class ZHG2P {
         return (legacyCall(processedText), [])
     }
 
+    // MARK: - Pinyin export (for non-IPA backends, e.g. Piper zh-CN)
+
+    /// A frontend token exposed at the pinyin level (before IPA conversion).
+    /// For Chinese tokens `syllables` holds full numeric-tone pinyin, e.g.
+    /// `["ni3", "hao3"]`. For `eng`/`x` tokens it holds the raw pieces.
+    public struct ZHPinyinToken {
+        public let text: String
+        public let tag: String
+        public let syllables: [String]
+        public init(text: String, tag: String, syllables: [String]) {
+            self.text = text
+            self.tag = tag
+            self.syllables = syllables
+        }
+    }
+
+    /// Phonemize to pinyin syllables instead of IPA. Used by acoustic models
+    /// (like Piper zh-CN) that consume pinyin initial/final/tone tokens rather
+    /// than Misaki's IPA. Runs the same number/punctuation normalization and
+    /// jieba+pinyin frontend as `phonemize(_:)`.
+    public func phonemizeToPinyin(_ text: String) -> [ZHPinyinToken] {
+        guard let frontend = frontend else { return [] }
+        var processed = StringUtils.convertNumbers(text)
+        processed = Self.mapPunctuation(processed)
+
+        var out: [ZHPinyinToken] = []
+        for tk in frontend.process(processed) {
+            if tk.tag == "x" || tk.tag == "eng" {
+                out.append(ZHPinyinToken(text: tk.text, tag: tk.tag, syllables: tk.phonemes))
+                continue
+            }
+            // Chinese: reassemble pinyin syllables, closing each on its tone digit.
+            var sylls: [String] = []
+            var acc = ""
+            for p in tk.phonemes {
+                acc += p
+                if p.contains(where: { $0.isNumber }) {
+                    sylls.append(acc)
+                    acc = ""
+                }
+            }
+            if !acc.isEmpty { sylls.append(acc) }
+            out.append(ZHPinyinToken(text: tk.text, tag: tk.tag, syllables: sylls))
+        }
+        return out
+    }
+
     // MARK: - Static methods
 
     /// Apply tone retoning: convert IPA tone diacritics to simplified arrows
@@ -362,6 +409,11 @@ public final class ZHG2P {
 
         parts.initial = pInitial
         parts.final = String(base.dropFirst(pInitial.count))
+
+        // j/q/x + u is written u but pronounced ü: ju -> jü, quan -> qüan, xun -> xün
+        if ["j", "q", "x"].contains(pInitial) && parts.final.hasPrefix("u") {
+            parts.final = "ü" + String(parts.final.dropFirst())
+        }
 
         return parts
     }

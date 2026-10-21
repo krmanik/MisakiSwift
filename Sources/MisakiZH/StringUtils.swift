@@ -135,7 +135,15 @@ public enum StringUtils {
     /// Handles percentages, fractions, ranges, quantifiers, and regular numbers
     public static func convertNumbers(_ text: String) -> String {
         var result = text
-        
+
+        // 0. Handle years digit by digit: 2026年 → 二零二六年
+        result = replaceMatches(
+            in: result,
+            pattern: "(?<!\\d)(\\d{4})(?=年)"
+        ) { match, nsString in
+            verbalizeDigit(nsString.substring(with: match.range(at: 1)))
+        }
+
         // 1. Handle percentages: 90% → 百分之九十, -50.5% → 负百分之五十点五
         result = replaceMatches(
             in: result,
@@ -246,9 +254,10 @@ public enum StringUtils {
                 return stripped.map { digitToChinese($0) }
             }
             
-            let splitIndex = stripped.index(stripped.endIndex, offsetBy: -power)
-            let firstPart = String(stripped[..<splitIndex])
-            let secondPart = String(stripped[splitIndex...])
+            // Split the unstripped string so inner zeros survive: 2026 → 二千零二十六
+            let splitIndex = valueString.index(valueString.endIndex, offsetBy: -power)
+            let firstPart = String(valueString[..<splitIndex])
+            let secondPart = String(valueString[splitIndex...])
             
             return getValue(firstPart, useZero: true) + [unitChar] + getValue(secondPart, useZero: true)
         }

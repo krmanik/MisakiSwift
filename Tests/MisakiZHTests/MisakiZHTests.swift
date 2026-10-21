@@ -304,7 +304,7 @@ final class MisakiZHTests: XCTestCase {
             return
         }
         let (result, _) = g2p.phonemize("是 90%")
-        XCTAssertEqual(result, "ʂɨ↘ pai̯↓fə→nʈʂɨ→ʨiuʂɨ↗")
+        XCTAssertEqual(result, "ʂɨ↘ pai̯↓fə→nʈʂɨ→ʨjou̯↓ʂɨ↗")
         print("90% -> \(result)")
     }
     
