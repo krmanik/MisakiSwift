@@ -145,7 +145,16 @@ final public class EnglishG2P {
     var tokens: [String] = []
     var features: [PreprocessFeature] = []
 
-    let input = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    // Normalize curly/typographic apostrophes to a straight ASCII apostrophe (U+0027).
+    // The subtokenize regex and the lexicon's possessive/contraction handling (e.g.
+    // hasSuffix("'s")) only match U+0027, so web text using U+2019 would otherwise
+    // split "company's" into "company" + "s" pronounced separately.
+    let normalizedText = text
+      .replacingOccurrences(of: "\u{2019}", with: "'")  // ’ right single quote
+      .replacingOccurrences(of: "\u{2018}", with: "'")  // ‘ left single quote
+      .replacingOccurrences(of: "\u{02BC}", with: "'")  // ʼ modifier letter apostrophe
+
+    let input = normalizedText.trimmingCharacters(in: .whitespacesAndNewlines)
     var lastEnd = input.startIndex
     let ns = input as NSString
     let fullRange = NSRange(location: 0, length: ns.length)
@@ -217,7 +226,37 @@ final public class EnglishG2P {
         
       return true
     }
-                            
+
+    // Re-join intra-word hyphen/apostrophe splits. NLTagger splits e.g. "start-up"
+    // into ["start", "-", "up"] and "company's" into ["company", "'", "s"]. Left
+    // separate, the connector "-" is tagged .dash → becomes an em-dash pause
+    // (audible gap), and a trailing "s" is voiced on its own. Merging the run back
+    // into one word token lets retokenize handle it as a unit: the hyphen subtoken
+    // resolves to "" (silent) and "'s" is treated as a possessive.
+    if mutableTokens.count > 2 {
+      var rejoined: [MToken] = []
+      var i = 0
+      while i < mutableTokens.count {
+        let tok = mutableTokens[i]
+        let isConnector = !tok.text.isEmpty && tok.text.allSatisfy { $0 == "-" || $0 == "'" }
+        if isConnector,
+           tok.whitespace.isEmpty,
+           let prev = rejoined.last, prev.whitespace.isEmpty,
+           (prev.text.last?.isLetter ?? false),
+           i + 1 < mutableTokens.count,
+           (mutableTokens[i + 1].text.first?.isLetter ?? false) {
+          let next = mutableTokens[i + 1]
+          _ = rejoined.popLast()
+          rejoined.append(mergeTokens([prev, tok, next]))
+          i += 2
+        } else {
+          rejoined.append(tok)
+          i += 1
+        }
+      }
+      mutableTokens = rejoined
+    }
+
     // Simplistic alignment by index to add stress and pre-phonemization features to tokens
     // TO_DO: Doesn't match the capability of spacy.training.Alignment.from_strings()
     for feature in preprocessedText.features {
